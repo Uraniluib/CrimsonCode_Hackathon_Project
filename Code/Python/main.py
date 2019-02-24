@@ -52,9 +52,9 @@ class ShowLayout(GridLayout):
         super(ShowLayout, self).__init__(**kwargs)
         self.cols = 2
         self.col_force_default = True
-        self.col_default_width = 500
+        self.col_default_width = 550
         self.row_force_default=True
-        self.row_default_height=500
+        self.row_default_height= 550
         self.picture = AsyncImage(
                 source="graphs.png",
                 size_hint= (1, .8),
@@ -77,13 +77,13 @@ class SearchLayout(GridLayout):
         self.cols = 2
         self.sg_t = sg
         
-        self.search_keyword = TextInput(multiline = False, size_hint_y=None, height = 50) 
+        self.search_keyword = TextInput(multiline = False, size_hint_y=None, height = 40) 
         self.search_keyword.bind(text = self.name_get_text)
         
         self.idWithTitle = {}
         
         
-        self.search_button = Button(text='Search Entity', size_hint_y=None, height = 50, size_hint_x=None, width=250)
+        self.search_button = Button(text='Search Entity', size_hint_y=None, height = 40, size_hint_x=None, width=250)
         self.search_button.bind(on_press = self.search)
         
         self.dropdown = DropDown()
@@ -110,7 +110,7 @@ class SearchLayout(GridLayout):
         '''
         search articles (as well as attributes) in the graph
         '''
-        print("I'm here")
+        
         if self.name_text == '':
             pass
         else:
@@ -120,19 +120,80 @@ class SearchLayout(GridLayout):
             show_text = ''
             for line in lines:
                 temp = line.split('\t')
-                if self.name_text in temp[1].lower():
+                if self.name_text.lower() in temp[1].lower():
                     self.idWithTitle[temp[0]] = temp[1]
                     show_text += temp[1]
-            for key,value in self.idWithTitle.items():
-                btn = Button(text=value, size_hint_y=None, height=35)
+            for k,v in self.idWithTitle.items():
+                btn = Button(text=v, size_hint_y=None, height=35)
                 btn.bind(on_release=lambda btn: self.dropdown.select(btn.text))
                 btn.bind(on_press = self.graphSearch)
                 self.dropdown.add_widget(btn)
             
             #self.sg_t.frequency.text = show_text
     def graphSearch(self, instance):
-        pass
-
+        #print(instance)
+        #print(value)
+        #self.sg_t.frequency.text = instance.text
+        file = open('..\\idWithAliasWithUniverse.csv','r',encoding = 'utf-8')
+        lines = file.readlines()
+        file.close()
+        file1 = open('..\\Full_Info_Data.csv','r',encoding = 'utf-8')
+        person = file1.readlines()
+        file1.close()
+        
+        #print(instance.text)
+        self.universe = ''
+        self.pid = ''
+        self.alias = ''
+        self.universeWithCharacters = {}
+        
+        for line in person:
+            temp = line.split('\t')
+            if temp[1] in instance.text:
+                self.pid = temp[0]
+            
+        for line in lines:
+            temp = line.split('\t')
+            if self.pid == temp[0]:
+                self.universe = temp[2].replace('\n','')
+                self.alias = temp[1]
+                
+        for line in lines:
+            temp = line.split('\t')
+            if temp[2].replace('\n','') in self.universe.replace('\n','') and temp[0] != self.pid:
+                self.universeWithCharacters[temp[0]] = [temp[1]]
+                
+        for line in person:
+            temp = line.split('\t')
+            if temp[1].replace('\n','') in instance.text.replace('\n',''):
+                self.sg_t.frequency.text = "<id>\t" + temp[0] + "\n<title>\t" + temp[1] + "<RealName>\t" + temp[2] + "\n<CurrentAlias>\t" + temp[3] + "\n<Affiliation>\t" + temp[4] + "\n<Relatives>\t" + temp[5] + "\n<Universe>\t" + temp[6] + "\n<Gender>\t" + temp[7] + "\n<Height>\t" + temp[8] + "\n<Weight>\t" + temp[9] + "\n<Eyes>\t" + temp[10] + "\n<Hair>\t" + temp[11] + "\n<Citizenship>\t" + temp[12] + "\n<Quotation>\t" + temp[13] + "\n"
+            
+        for line in person:
+            temp = line.split('\t')
+            if temp[0] in self.universeWithCharacters.keys():
+                tempName = self.universeWithCharacters[temp[0]]
+                self.universeWithCharacters[temp[0]] = [tempName,temp[5]]
+        #print(self.universe)       
+        #print(self.pid)
+        #print(self.alias)
+        sgraph = igraph.Graph()
+        sgraph.add_vertex(name = self.alias.replace('\n',''), label = self.alias.replace('\n',''), size = 150, color = 'red')
+        sgraph.add_vertex(name = self.universe.replace('\n',''), label = self.universe.replace('\n',''), size = 200, color = 'orange')
+        sgraph.add_edge(self.universe.replace('\n',''),self.alias.replace('\n',''))
+        for k,v in self.universeWithCharacters.items():
+            #print(v[0])
+            if self.alias.replace('\n','') in v[1].replace('\n',''):
+                sgraph.add_vertex(name = v[0][0].replace('\n',''), label = v[0][0].replace('\n',''), size = 100, color = 'blue')
+                sgraph.add_edge(v[0][0].replace('\n',''),self.alias.replace('\n',''))
+                sgraph.add_edge(self.universe.replace('\n',''),v[0][0].replace('\n',''))
+            else:
+                sgraph.add_vertex(name = v[0][0].replace('\n',''), label = v[0][0].replace('\n',''), size = 50, color = 'grey')
+                sgraph.add_edge(self.universe.replace('\n',''),v[0][0].replace('\n',''))
+        layout = sgraph.layout("kk")
+        igraph.plot(sgraph, layout = layout, bbox = (1300, 1000), margin = 100, edge_width = 10, vertex_label_size = 50).save(self.alias.replace('\n','') + "_search.png")
+        self.sg_t.picture.source = self.alias.replace('\n','') + "_search.png"
+        
+        
 
 class CustomLayout(GridLayout):
     
@@ -144,7 +205,7 @@ class CustomLayout(GridLayout):
         super(CustomLayout, self).__init__(**kwargs)
         self.rows = 2
         self.row_force_default=True
-        self.row_default_height=500
+        self.row_default_height=550
         #self.frequency_text = ''
         self.show_grid = ShowLayout()
         self.add_widget(self.show_grid)
